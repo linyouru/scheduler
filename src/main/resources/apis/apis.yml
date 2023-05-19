@@ -1,0 +1,124 @@
+swagger: "2.0"
+info:
+  title: Demo APIs
+  version: "2.0"
+  description: Use VSCode plugin [OpenAPI (Swagger) Editor](https://marketplace.visualstudio.com/items?itemName=42Crunch.vscode-openapi) to edit this document.
+host: localhost:8080
+schemes:
+  - http
+  - https
+
+paths:
+  /v1/pressure/start:
+    get:
+      summary: 开始压测
+      description: 在设置周期内尽量均匀的上报数据,压测设备为上线的设备
+      tags:
+        - pressure
+      operationId: pressureStart
+      produces:
+        - "application/json"
+      parameters:
+        - in: query
+          name: deviceNumber
+          type: integer
+          description: 上线的设备数，也是压测的设备数
+        - in: query
+          name: deviceType
+          type: string
+          description: 压测的设备类型
+        - in: query
+          name: part
+          type: integer
+          description: 每批上线多少设备
+        - in: query
+          name: rest
+          type: integer
+          description: 两批设备上线间隔(ms)
+        - in: query
+          name: period
+          type: integer
+          description: 上报数据的周期，单位：秒;设备将在此周期内尽量均匀上报数据
+        - in: query
+          name: topic
+          type: string
+          description: 上报数据类型，data、raw
+        - in: query
+          name: data
+          type: string
+          description: 上报的数据，为base64字符串
+      responses:
+        200:
+          description: success
+          schema:
+            $ref: "#/definitions/BaseResp"
+        400:
+          description: parameter error
+        500:
+          description: server error
+  /v1/pressure/stop:
+    get:
+      summary: 停止压测
+      description: 压测设备下线,断开mqtt连接,停止定时任务
+      tags:
+        - pressure
+      operationId: pressureStop
+      produces:
+        - "application/json"
+      responses:
+        200:
+          description: success
+          schema:
+            $ref: "#/definitions/BaseResp"
+        400:
+          description: parameter error
+        500:
+          description: server error
+# common parameters
+parameters:
+  queryPageSize:
+    name: page_size
+    in: query
+    type: integer
+    required: false
+    default: 20
+    description: 每页条数
+  queryCurrentPage:
+    name: current_page
+    in: query
+    type: integer
+    required: false
+    default: 1
+    description: 当前页
+
+# common data structure
+definitions:
+  BaseResp:
+    type: object
+    properties:
+      message:
+        type: string
+  OnePageData:
+    type: object
+    properties:
+      pagination:
+        type: object
+        properties:
+          totalSize:
+            type: integer
+            example: 1000
+          currentPage:
+            type: integer
+            example: 1
+          pageSize:
+            type: integer
+            example: 20
+  devicesInfo:
+    type: object
+    properties:
+      deviceType:
+        type: string
+        description: 设备类型
+      total:
+        type: integer
+        description: 该类型设备的总数
