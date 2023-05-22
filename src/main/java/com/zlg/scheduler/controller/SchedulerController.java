@@ -1,10 +1,12 @@
 package com.zlg.scheduler.controller;
 
 import com.zlg.scheduler.controller.model.ApiBaseResp;
+import com.zlg.scheduler.exception.BizException;
 import com.zlg.scheduler.service.SchedulerService;
 import io.swagger.annotations.Api;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -12,25 +14,40 @@ import javax.annotation.Resource;
 
 @RestController
 @Api(tags = "pressure")
-public class SchedulerController implements PressureApi{
+public class SchedulerController implements PressureApi {
 
     @Resource
     private SchedulerService service;
+    private boolean underPressure = false;
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
 
     @Override
+    public ResponseEntity<ApiBaseResp> deviceOnline(Integer deviceNumber, String deviceType, Integer part, Integer rest) {
+        if (underPressure) {
+            throw new BizException(HttpStatus.BAD_REQUEST, "pressure.1002");
+        }
+        logger.info("设备上线");
+        service.deviceOnline(deviceNumber, deviceType, part, rest);
+        underPressure = true;
+        return ResponseEntity.ok(new ApiBaseResp().message("success"));
+    }
+
+    @Override
     public ResponseEntity<ApiBaseResp> pressureStart(Integer deviceNumber, String deviceType, Integer part, Integer rest, Integer period, String topic, String data) {
-
-        logger.info("调度器开始分配任务");
+        if (underPressure) {
+            throw new BizException(HttpStatus.BAD_REQUEST, "pressure.1002");
+        }
+        logger.info("开始压测");
         service.pressureStart(deviceNumber, deviceType, part, rest, period, topic, data);
-
-
+        underPressure = true;
 
         return ResponseEntity.ok(new ApiBaseResp().message("success"));
     }
 
     @Override
     public ResponseEntity<ApiBaseResp> pressureStop() {
-        return null;
+        logger.info("停止压测");
+        service.pressureStop();
+        return ResponseEntity.ok(new ApiBaseResp().message("success"));
     }
 }

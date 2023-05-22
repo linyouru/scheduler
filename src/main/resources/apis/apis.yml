@@ -9,10 +9,45 @@ schemes:
   - https
 
 paths:
+  /v1/device/online:
+    get:
+      summary: 在一定时间内均匀上线设备
+      description: 仅仅上线设备，不进行数据上报
+      tags:
+        - pressure
+      operationId: deviceOnline
+      produces:
+        - "application/json"
+      parameters:
+        - in: query
+          name: deviceNumber
+          type: integer
+          description: 上线的设备数，也是压测的设备数
+        - in: query
+          name: deviceType
+          type: string
+          description: 压测的设备类型
+        - in: query
+          name: part
+          type: integer
+          description: 每批上线多少设备
+        - in: query
+          name: rest
+          type: integer
+          description: 两批设备上线间隔(ms)
+      responses:
+        200:
+          description: success
+          schema:
+            $ref: "#/definitions/BaseResp"
+        400:
+          description: parameter error
+        500:
+          description: server error
   /v1/pressure/start:
     get:
       summary: 开始压测
-      description: 在设置周期内尽量均匀的上报数据,压测设备为上线的设备
+      description: 在一定时间内均匀上线设备，然后在设置周期内尽量均匀的上报数据
       tags:
         - pressure
       operationId: pressureStart
@@ -59,7 +94,7 @@ paths:
   /v1/pressure/stop:
     get:
       summary: 停止压测
-      description: 压测设备下线,断开mqtt连接,停止定时任务
+      description: 断开压测设备mqtt连接,停止定时任务
       tags:
         - pressure
       operationId: pressureStop
