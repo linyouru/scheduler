@@ -36,20 +36,9 @@ public class SchedulerService {
             throw new BizException(HttpStatus.BAD_REQUEST, "pressure.1001");
         }
 
-        if (deviceNumber < 50) {
-            //全给一个执行器
-            ExecuteScope executeScope = new ExecuteScope();
-            executeScope.setDeviceTotal(deviceNumber);
-            executeScope.setStartUser(1);
-            executeScope.setStartDevice(1);
-            //调用执行器接口
-            Mono<ApiBaseResp> baseRespMono = WEB_CLIENT.get()
-                    .uri("http://192.168.24.91/v1/pressure/start?")
-                    .accept(MediaType.APPLICATION_JSON)
-                    .retrieve()
-                    .bodyToMono(ApiBaseResp.class);
-            ApiBaseResp block = baseRespMono.block();
-            logger.info("调用执行器压测接口结果:{}",block.getMessage());
+        if (deviceNumber <= executeTotal) {
+            //全给一个执行器,调用执行器接口
+            requestDeviceOnline(executeHostList[0], deviceNumber, deviceType, part, rest, 1, 1);
         } else {
             ArrayList<ExecuteScope> executeScopes = new ArrayList<>();
             int excess = deviceNumber % executeTotal;
@@ -68,15 +57,13 @@ public class SchedulerService {
                             executeScope.setStartDevice(currentDevice);
                             if (executeScopes.size() == executeTotal - 1) {
                                 executeScope.setDeviceTotal(bucket + excess);
-                            } else {
-                                executeScope.setDeviceTotal(bucket);
+                                executeScopes.add(executeScope);
+                                break one;
                             }
+                            executeScope.setDeviceTotal(bucket);
                             executeScopes.add(executeScope);
                             currentUser = j + 1 > 500 ? i + 1 : i;
                             currentDevice = j + 1 > 500 ? 1 : j + 1;
-                        }
-                        if (total == deviceNumber) {
-                            break one;
                         }
                     }
                 } else if ("can-common".equals(deviceType)) {
@@ -88,9 +75,10 @@ public class SchedulerService {
                             executeScope.setStartDevice(currentDevice);
                             if (executeScopes.size() == executeTotal - 1) {
                                 executeScope.setDeviceTotal(bucket + excess);
-                            } else {
-                                executeScope.setDeviceTotal(bucket);
+                                executeScopes.add(executeScope);
+                                break one;
                             }
+                            executeScope.setDeviceTotal(bucket);
                             executeScopes.add(executeScope);
                             currentUser = j + 1 > 2 ? i + 1 : i;
                             currentDevice = j + 1 > 2 ? 1 : j + 1;
@@ -103,12 +91,51 @@ public class SchedulerService {
             }
             logger.info(executeScopes.toString());
             //分好每个执行器的设备范围，调用执行器接口
-
+            for (int i = 0; i < executeHostList.length; i++) {
+                ExecuteScope executeScope = executeScopes.get(i);
+                requestDeviceOnline(executeHostList[i], executeScope.deviceTotal, deviceType, part, rest, executeScope.startUser, executeScope.startDevice);
+            }
 
         }
 
 
     }
 
+    private void requestDeviceOnline(String host, Integer deviceNumber, String deviceType, Integer part, Integer rest, Integer startUserIndex, Integer startDeviceIndex) {
+        String uri = new StringBuilder("http://")
+                .append(host)
+                .append("/v1/pressure/device_onlien?")
+                .append("deviceNumber=").append(deviceNumber).append("&")
+                .append("deviceType=").append(deviceType).append("&")
+                .append("part=").append(part).append("&")
+                .append("rest=").append(rest).append("&")
+                .append("startUserIndex=").append(startUserIndex).append("&")
+                .append("startDeviceIndex=").append(startDeviceIndex)
+                .toString();
+        Mono<ApiBaseResp> baseRespMono = WEB_CLIENT.get()
+                .uri(uri)
+                .accept(MediaType.APPLICATION_JSON)
+                .retrieve()
+                .bodyToMono(ApiBaseResp.class);
+        ApiBaseResp block = baseRespMono.block();
+    }
+
+    private void requestPressureStart() {
+        Mono<ApiBaseResp> baseRespMono = WEB_CLIENT.get()
+                .uri("http://192.168.174.128:9320/v1/pressure/start?")
+                .accept(MediaType.APPLICATION_JSON)
+                .retrieve()
+                .bodyToMono(ApiBaseResp.class);
+        ApiBaseResp block = baseRespMono.block();
+    }
+
+    private void requestPressureStop() {
+        Mono<ApiBaseResp> baseRespMono = WEB_CLIENT.get()
+                .uri("http://192.168.174.128:9320/v1/pressure/stop?")
+                .accept(MediaType.APPLICATION_JSON)
+                .retrieve()
+                .bodyToMono(ApiBaseResp.class);
+        ApiBaseResp block = baseRespMono.block();
+    }
 
 }
