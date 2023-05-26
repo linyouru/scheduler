@@ -1,5 +1,8 @@
 package com.zlg.scheduler.pojo;
 
+/**
+ * 执行器组装设备信息实体类
+ */
 public class ExecuteScope {
 
     public Integer startUser;
