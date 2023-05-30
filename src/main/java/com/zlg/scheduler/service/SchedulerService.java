@@ -171,7 +171,6 @@ public class SchedulerService {
                 .append("startUserIndex=").append(startUserIndex).append("&")
                 .append("startDeviceIndex=").append(startDeviceIndex)
                 .toString();
-        WebClient.RequestBodyUriSpec bodyUriSpec = WEB_CLIENT.method(HttpMethod.GET);
         Mono<ApiBaseResp> baseRespMono = WEB_CLIENT.get()
                 .uri(uri)
                 .accept(MediaType.APPLICATION_JSON)

@@ -26,7 +26,7 @@ public class SchedulerController implements PressureApi {
         if (underPressure) {
             throw new BizException(HttpStatus.BAD_REQUEST, "pressure.1002");
         }
-        logger.info("设备上线");
+        logger.debug("调度器触发设备上线");
         service.deviceOnline(deviceNumber, deviceType, part, rest);
         underPressure = true;
         return ResponseEntity.ok(new ApiBaseResp().message("success"));
@@ -37,7 +37,7 @@ public class SchedulerController implements PressureApi {
         if (underPressure) {
             throw new BizException(HttpStatus.BAD_REQUEST, "pressure.1002");
         }
-        logger.info("开始压测");
+        logger.debug("调度器触发开始压测");
         service.pressureStart(deviceNumber, deviceType, part, rest, period, topic, data);
         underPressure = true;
 
@@ -46,8 +46,9 @@ public class SchedulerController implements PressureApi {
 
     @Override
     public ResponseEntity<ApiBaseResp> pressureStop() {
-        logger.info("停止压测");
+        logger.debug("调度器触发停止压测");
         service.pressureStop();
+        underPressure = false;
         return ResponseEntity.ok(new ApiBaseResp().message("success"));
     }
 }
