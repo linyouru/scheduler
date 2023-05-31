@@ -13,22 +13,22 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
+import javax.annotation.Resource;
 import java.util.ArrayList;
 
 @Service
 public class SchedulerService {
 
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
-    private final static WebClient WEB_CLIENT;
     private final static int TEST_TENANT_TOTAL = 1000;
     private final static int INVERT_TOTAL = 500;
     private final static int CAN_COMMON_TOTAL = 2;
     @Value(value = "${execute}")
     private String executeHosts;
 
-    static {
-        WEB_CLIENT = WebClient.builder().codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(5 * 1024 * 1024)).build();
-    }
+    @Resource
+    private AsyncSchedulerService asyncSchedulerService;
+
 
     public void deviceOnline(Integer deviceNumber, String deviceType, Integer part, Integer rest) {
 
@@ -39,13 +39,15 @@ public class SchedulerService {
         }
         if (deviceNumber <= executeTotal) {
             //全给一个执行器,调用执行器接口
-            requestDeviceOnline(executeHostList[0], deviceNumber, deviceType, part, rest, 1, 1);
+            logger.info("全给一个");
+            asyncSchedulerService.requestDeviceOnline(executeHostList[0], deviceNumber, deviceType, part, rest, 1, 1);
         } else {
+            logger.info("分给多个");
             ArrayList<ExecuteScope> executeScopes = getExecuteScopes(deviceNumber, deviceType, executeTotal);
             //分好每个执行器的设备范围，调用执行器接口
             for (int i = 0; i < executeHostList.length; i++) {
                 ExecuteScope executeScope = executeScopes.get(i);
-                requestDeviceOnline(executeHostList[i], executeScope.deviceTotal, deviceType, part, rest, executeScope.startUser, executeScope.startDevice);
+                asyncSchedulerService.requestDeviceOnline(executeHostList[i], executeScope.deviceTotal, deviceType, part, rest, executeScope.startUser, executeScope.startDevice);
             }
         }
     }
@@ -59,13 +61,13 @@ public class SchedulerService {
         }
         if (deviceNumber <= executeTotal) {
             //全给一个执行器,调用执行器接口
-            requestPressureStart(executeHostList[0], deviceNumber, deviceType, part, rest, period, topic, data, 1, 1);
+            asyncSchedulerService.requestPressureStart(executeHostList[0], deviceNumber, deviceType, part, rest, period, topic, data, 1, 1);
         } else {
             ArrayList<ExecuteScope> executeScopes = getExecuteScopes(deviceNumber, deviceType, executeTotal);
             //分好每个执行器的设备范围，调用执行器接口
             for (int i = 0; i < executeHostList.length; i++) {
                 ExecuteScope executeScope = executeScopes.get(i);
-                requestPressureStart(executeHostList[i], executeScope.deviceTotal, deviceType, part, rest, period, topic, data, executeScope.startUser, executeScope.startDevice);
+                asyncSchedulerService.requestPressureStart(executeHostList[i], executeScope.deviceTotal, deviceType, part, rest, period, topic, data, executeScope.startUser, executeScope.startDevice);
             }
         }
     }
@@ -73,7 +75,7 @@ public class SchedulerService {
     public void pressureStop() {
         String[] executeHostList = executeHosts.split(",");
         for (String executeHost : executeHostList) {
-            requestPressureStop(executeHost);
+            asyncSchedulerService.requestPressureStop(executeHost);
         }
     }
 
@@ -94,7 +96,7 @@ public class SchedulerService {
         int currentDevice = 1;
         one:
         for (int i = 1; i <= TEST_TENANT_TOTAL; i++) {
-            if ("invert" .equals(deviceType)) {
+            if ("invert".equals(deviceType)) {
                 for (int j = 1; j <= INVERT_TOTAL; j++) {
                     total++;
                     if (total >= bucket && total % bucket == 0) {
@@ -104,7 +106,7 @@ public class SchedulerService {
                         currentDevice = j + 1 > INVERT_TOTAL ? 1 : j + 1;
                     }
                 }
-            } else if ("can-common" .equals(deviceType)) {
+            } else if ("can-common".equals(deviceType)) {
                 for (int j = 1; j <= CAN_COMMON_TOTAL; j++) {
                     total++;
                     if (total >= bucket && total % bucket == 0) {
@@ -119,7 +121,7 @@ public class SchedulerService {
                 }
             }
         }
-        logger.info(executeScopes.toString());
+//        logger.info(executeScopes.toString());
         return executeScopes;
     }
 
@@ -149,85 +151,5 @@ public class SchedulerService {
         return false;
     }
 
-    /**
-     * 调用执行器设备上线接口
-     *
-     * @param host             执行器host
-     * @param deviceNumber     执行器压测设备数
-     * @param deviceType       设备类型invert,can-common
-     * @param part             每批上线多少设备
-     * @param rest             两批设备上线间隔(ms)
-     * @param startUserIndex   执行器组装设备信息时起始用户
-     * @param startDeviceIndex 执行器组装设备信息时起始设备
-     */
-    private void requestDeviceOnline(String host, Integer deviceNumber, String deviceType, Integer part, Integer rest, Integer startUserIndex, Integer startDeviceIndex) {
-        String uri = new StringBuilder("http://")
-                .append(host)
-                .append("/v1/pressure/device_onlien?")
-                .append("deviceNumber=").append(deviceNumber).append("&")
-                .append("deviceType=").append(deviceType).append("&")
-                .append("part=").append(part).append("&")
-                .append("rest=").append(rest).append("&")
-                .append("startUserIndex=").append(startUserIndex).append("&")
-                .append("startDeviceIndex=").append(startDeviceIndex)
-                .toString();
-        Mono<ApiBaseResp> baseRespMono = WEB_CLIENT.get()
-                .uri(uri)
-                .accept(MediaType.APPLICATION_JSON)
-                .retrieve()
-                .bodyToMono(ApiBaseResp.class);
-        ApiBaseResp block = baseRespMono.block();
-    }
-
-    /**
-     * 调用执行器开始压测接口
-     *
-     * @param host             执行器host
-     * @param deviceNumber     执行器压测设备数
-     * @param deviceType       设备类型invert,can-common
-     * @param part             每批上线多少设备
-     * @param rest             两批设备上线间隔(ms)
-     * @param period           上报数据的周期(s);设备将在此周期内尽量均匀上报数据
-     * @param topic            上报数据类型，data、raw
-     * @param data             上报的数据，为base64字符串
-     * @param startUserIndex   执行器组装设备信息时起始用户
-     * @param startDeviceIndex 执行器组装设备信息时起始设备
-     */
-    private void requestPressureStart(String host, Integer deviceNumber, String deviceType, Integer part, Integer rest, Integer period, String topic, String data, Integer startUserIndex, Integer startDeviceIndex) {
-        String uri = new StringBuilder("http://")
-                .append(host)
-                .append("/v1/pressure/start?")
-                .append("deviceNumber=").append(deviceNumber).append("&")
-                .append("deviceType=").append(deviceType).append("&")
-                .append("part=").append(part).append("&")
-                .append("rest=").append(rest).append("&")
-                .append("period=").append(period).append("&")
-                .append("topic=").append(topic).append("&")
-                .append("data=").append(data).append("&")
-                .append("startUserIndex=").append(startUserIndex).append("&")
-                .append("startDeviceIndex=").append(startDeviceIndex)
-                .toString();
-        Mono<ApiBaseResp> baseRespMono = WEB_CLIENT.get()
-                .uri(uri)
-                .accept(MediaType.APPLICATION_JSON)
-                .retrieve()
-                .bodyToMono(ApiBaseResp.class);
-        ApiBaseResp block = baseRespMono.block();
-    }
-
-    /**
-     * 调用执行器停止压测接口
-     *
-     * @param host 执行器host
-     */
-    private void requestPressureStop(String host) {
-        String uri = new StringBuilder("http://").append(host).append("/v1/pressure/stop").toString();
-        Mono<ApiBaseResp> baseRespMono = WEB_CLIENT.get()
-                .uri(uri)
-                .accept(MediaType.APPLICATION_JSON)
-                .retrieve()
-                .bodyToMono(ApiBaseResp.class);
-        ApiBaseResp block = baseRespMono.block();
-    }
 
 }
