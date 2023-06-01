@@ -30,7 +30,7 @@ public class SchedulerService {
     private AsyncSchedulerService asyncSchedulerService;
 
 
-    public void deviceOnline(Integer deviceNumber, String deviceType, Integer part, Integer rest) {
+    public void deviceOnline(Integer deviceNumber, String deviceType, Integer part, Integer rest) throws InterruptedException {
 
         String[] executeHostList = executeHosts.split(",");
         int executeTotal = executeHostList.length;
@@ -48,11 +48,12 @@ public class SchedulerService {
             for (int i = 0; i < executeHostList.length; i++) {
                 ExecuteScope executeScope = executeScopes.get(i);
                 asyncSchedulerService.requestDeviceOnline(executeHostList[i], executeScope.deviceTotal, deviceType, part, rest, executeScope.startUser, executeScope.startDevice);
+                Thread.sleep( 1000);
             }
         }
     }
 
-    public void pressureStart(Integer deviceNumber, String deviceType, Integer part, Integer rest, Integer period, String topic, String data) {
+    public void pressureStart(Integer deviceNumber, String deviceType, Integer part, Integer rest, Integer period, String topic, String data) throws InterruptedException {
 
         String[] executeHostList = executeHosts.split(",");
         int executeTotal = executeHostList.length;
@@ -68,6 +69,7 @@ public class SchedulerService {
             for (int i = 0; i < executeHostList.length; i++) {
                 ExecuteScope executeScope = executeScopes.get(i);
                 asyncSchedulerService.requestPressureStart(executeHostList[i], executeScope.deviceTotal, deviceType, part, rest, period, topic, data, executeScope.startUser, executeScope.startDevice);
+                Thread.sleep( 1000);
             }
         }
     }
