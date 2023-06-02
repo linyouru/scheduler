@@ -9,4 +9,4 @@ spring:
 logging:
   config: classpath:log4j2.xml
 
-execute: "192.168.174.128:9320,192.168.174.125:9320"
+execute: "192.168.174.128:9320"

@@ -39,14 +39,15 @@ public class SchedulerService {
         }
         if (deviceNumber <= executeTotal) {
             //全给一个执行器,调用执行器接口
-            logger.info("全给一个");
+//            logger.info("全给一个");
             asyncSchedulerService.requestDeviceOnline(executeHostList[0], deviceNumber, deviceType, part, rest, 1, 1);
         } else {
-            logger.info("分给多个");
+//            logger.info("分给多个");
             ArrayList<ExecuteScope> executeScopes = getExecuteScopes(deviceNumber, deviceType, executeTotal);
             //分好每个执行器的设备范围，调用执行器接口
             for (int i = 0; i < executeHostList.length; i++) {
                 ExecuteScope executeScope = executeScopes.get(i);
+//                logger.debug(executeScope.toString());
                 asyncSchedulerService.requestDeviceOnline(executeHostList[i], executeScope.deviceTotal, deviceType, part, rest, executeScope.startUser, executeScope.startDevice);
                 Thread.sleep( 1000);
             }

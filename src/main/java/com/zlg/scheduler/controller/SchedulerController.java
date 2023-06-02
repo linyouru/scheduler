@@ -1,6 +1,7 @@
 package com.zlg.scheduler.controller;
 
 import com.zlg.scheduler.controller.model.ApiBaseResp;
+import com.zlg.scheduler.controller.model.ApiSandData;
 import com.zlg.scheduler.exception.BizException;
 import com.zlg.scheduler.service.SchedulerService;
 import io.swagger.annotations.Api;
@@ -37,13 +38,13 @@ public class SchedulerController implements PressureApi {
     }
 
     @Override
-    public ResponseEntity<ApiBaseResp> pressureStart(Integer deviceNumber, String deviceType, Integer part, Integer rest, Integer period, String topic, String data) {
+    public ResponseEntity<ApiBaseResp> pressureStart(ApiSandData body, Integer deviceNumber, String deviceType, Integer part, Integer rest, Integer period, String topic) {
         if (underPressure) {
             throw new BizException(HttpStatus.BAD_REQUEST, "pressure.1002");
         }
         logger.debug("调度器触发开始压测");
         try {
-            service.pressureStart(deviceNumber, deviceType, part, rest, period, topic, data);
+            service.pressureStart(deviceNumber, deviceType, part, rest, period, topic, body.getData());
         } catch (Exception e) {
             logger.error("调度器调用pressureStart异常: {}", e.getMessage());
         }

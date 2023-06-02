@@ -6,6 +6,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
@@ -68,6 +71,8 @@ public class AsyncSchedulerService {
      */
     @Async
     public void requestPressureStart(String host, Integer deviceNumber, String deviceType, Integer part, Integer rest, Integer period, String topic, String data, Integer startUserIndex, Integer startDeviceIndex) {
+        String parentsJson = "{\"data\":\"" + data + "\"}";
+
         String uri = new StringBuilder("http://")
                 .append(host)
                 .append("/v1/pressure/start?")
@@ -77,14 +82,15 @@ public class AsyncSchedulerService {
                 .append("rest=").append(rest).append("&")
                 .append("period=").append(period).append("&")
                 .append("topic=").append(topic).append("&")
-                .append("data=").append(data).append("&")
                 .append("startUserIndex=").append(startUserIndex).append("&")
                 .append("startDeviceIndex=").append(startDeviceIndex)
                 .toString();
         logger.debug("调度器调用: {}", uri);
-        Mono<ApiBaseResp> baseRespMono = WEB_CLIENT.get()
+        Mono<ApiBaseResp> baseRespMono = WEB_CLIENT.post()
                 .uri(uri)
+                .contentType(MediaType.APPLICATION_JSON)
                 .accept(MediaType.APPLICATION_JSON)
+                .bodyValue(parentsJson)
                 .retrieve()
                 .bodyToMono(ApiBaseResp.class);
         ApiBaseResp block = baseRespMono.block();

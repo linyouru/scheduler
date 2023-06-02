@@ -45,7 +45,7 @@ paths:
         500:
           description: server error
   /v1/pressure/start:
-    get:
+    post:
       summary: 开始压测
       description: 在一定时间内均匀上线设备，然后在设置周期内尽量均匀的上报数据
       tags:
@@ -78,10 +78,11 @@ paths:
           name: topic
           type: string
           description: 上报数据类型，data、raw
-        - in: query
-          name: data
-          type: string
-          description: 上报的数据，为base64字符串
+        - in: body
+          name: body
+          required: true
+          schema:
+            $ref: "#/definitions/SandData"
       responses:
         200:
           description: success
@@ -148,12 +149,9 @@ definitions:
           pageSize:
             type: integer
             example: 20
-  devicesInfo:
+  SandData:
     type: object
     properties:
-      deviceType:
+      data:
         type: string
-        description: 设备类型
-      total:
-        type: integer
-        description: 该类型设备的总数
+        description: 上报的数据，为base64字符串
