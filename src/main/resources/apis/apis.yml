@@ -73,7 +73,7 @@ paths:
         - in: query
           name: period
           type: integer
-          description: 上报数据的周期，单位：秒;设备将在此周期内尽量均匀上报数据
+          description: 上报数据的周期(ms);设备将在此周期内尽量均匀上报数据,不能小于100
         - in: query
           name: topic
           type: string
