@@ -20,9 +20,12 @@ import java.util.ArrayList;
 public class SchedulerService {
 
     private final Logger logger = LoggerFactory.getLogger(this.getClass());
-    private final static int TEST_TENANT_TOTAL = 1000;
-    private final static int INVERT_TOTAL = 500;
-    private final static int CAN_COMMON_TOTAL = 2;
+    @Value(value = "${testData.tenantTotal}")
+    private int TEST_TENANT_TOTAL;
+    @Value(value = "${testData.invertTotal}")
+    private int INVERT_TOTAL;
+    @Value(value = "${testData.canCommonTotal}")
+    private int CAN_COMMON_TOTAL;
     @Value(value = "${execute}")
     private String executeHosts;
 

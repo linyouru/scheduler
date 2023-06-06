@@ -10,3 +10,8 @@ logging:
   config: classpath:log4j2.xml
 
 execute: "192.168.174.128:9320"
+
+testData:
+  tenantTotal: 1000
+  invertTotal: 1000
+  canCommonTotal: 100
