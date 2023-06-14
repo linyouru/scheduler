@@ -37,7 +37,7 @@ public class SchedulerService {
 
         String[] executeHostList = executeHosts.split(",");
         int executeTotal = executeHostList.length;
-        if (deviceNumber < 1 || deviceNumber > 500000) {
+        if (deviceNumber < 1 || deviceNumber > 1000000) {
             throw new BizException(HttpStatus.BAD_REQUEST, "pressure.1001");
         }
         if (deviceNumber <= executeTotal) {
@@ -61,7 +61,7 @@ public class SchedulerService {
 
         String[] executeHostList = executeHosts.split(",");
         int executeTotal = executeHostList.length;
-        if (deviceNumber < 1 || deviceNumber > 500000) {
+        if (deviceNumber < 1 || deviceNumber > 1000000) {
             throw new BizException(HttpStatus.BAD_REQUEST, "pressure.1001");
         }
         if (deviceNumber <= executeTotal) {
